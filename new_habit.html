@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Habit Setup</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+</head>
+
+<body class="bg-gray-100 text-gray-800 flex flex-col min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-white shadow-md sticky top-0 z-50">
+    <div class="container mx-auto flex justify-between items-center py-4 px-6">
+      <h1 class="text-xl font-bold flex items-center gap-2">
+        <img src="logo.jpg" alt="WalletFlow" class="w-12 h-12 rounded-full">
+        WalletFlow
+      </h1>
+      <nav class="hidden md:flex gap-6">
+        <a href="index.html" class="text-gray-600 hover:text-indigo-600">Dashboard</a>
+        <a href="new_habit.html" class="text-gray-600 hover:text-indigo-600">Habits</a>
+        <a href="report.html" class="text-gray-600 hover:text-indigo-600">Reports</a>
+      </nav>
+      <button id="menu-btn" class="md:hidden text-gray-600">
+        <i class="fa-solid fa-bars text-2xl"></i>
+      </button>
+    </div>
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-menu" class="hidden fixed inset-0 z-50 flex justify-end">
+      <!-- Dark background -->
+      <div id="overlay" class="absolute inset-0 bg-black bg-opacity-50"></div>
+
+      <!-- Drawer -->
+      <div id="drawer" class="relative w-64 bg-white h-full shadow-lg flex flex-col p-6 space-y-4 
+              transform translate-x-full transition-transform duration-300">
+        <button id="close-menu" class="self-end text-gray-600">
+          <i class="fa-solid fa-xmark text-2xl"></i>
+        </button>
+        <a href="index.html" class="block text-gray-600 hover:text-indigo-600">Dashboard</a>
+        <a href="new_habit.html" class="block text-gray-600 hover:text-indigo-600">Habits</a>
+        <a href="report.html" class="block text-gray-600 hover:text-indigo-600">Reports</a>
+      </div>
+    </div>
+
+    <script>
+      const menuBtn = document.getElementById("menu-btn");
+      const mobileMenu = document.getElementById("mobile-menu");
+      const drawer = document.getElementById("drawer");
+      const overlay = document.getElementById("overlay");
+      const closeBtn = document.getElementById("close-menu");
+
+      // Open menu
+      menuBtn.addEventListener("click", () => {
+        mobileMenu.classList.remove("hidden");
+        setTimeout(() => {
+          drawer.classList.remove("translate-x-full");
+        }, 10); // allow reflow before animating
+      });
+
+      // Close menu
+      function closeMenu() {
+        drawer.classList.add("translate-x-full");
+        setTimeout(() => {
+          mobileMenu.classList.add("hidden");
+        }, 300); // match duration-300
+      }
+
+      closeBtn.addEventListener("click", closeMenu);
+      overlay.addEventListener("click", closeMenu);
+    </script>
+
+  </header>
+
+  <!-- Content -->
+  <main class="container mx-auto flex-grow px-4 py-6">
+
+    <!-- Habit Form -->
+    <div class="bg-white rounded-xl shadow-md p-6 max-w-md mx-auto">
+      <h1 class="text-2xl mb-6 font-bold text-center">Habit Setup</h1>
+      <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-plus-circle text-indigo-600"></i> Add a New Habit
+      </h2>
+
+      <form id="habitForm" class="space-y-4">
+
+        <!-- Habit Name -->
+        <div>
+          <label class="block text-sm font-medium mb-1">Habit Name</label>
+          <input type="text" id="habitName"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring focus:ring-indigo-300"
+            required>
+        </div>
+
+        <!-- Penalty Amount -->
+        <div>
+          <label class="block text-sm font-medium mb-1">Daily Penalty (₹)</label>
+          <input type="number" id="penaltyAmount"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring focus:ring-indigo-300"
+            min="1" required>
+        </div>
+
+        <!-- Category -->
+        <div>
+          <label class="block text-sm font-medium mb-1">Category</label>
+          <select id="habitCategory"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring focus:ring-indigo-300">
+            <option>Health</option>
+            <option>Study</option>
+            <option>Productivity</option>
+            <option>Personal</option>
+          </select>
+        </div>
+
+        <!-- Frequency -->
+        <div>
+          <label class="block text-sm font-medium mb-1">Frequency</label>
+          <select id="habitFrequency"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring focus:ring-indigo-300">
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+          </select>
+        </div>
+
+        <!-- Start Date -->
+        <div>
+          <label class="block text-sm font-medium mb-1">Start Date</label>
+          <input type="date" id="startDate"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring focus:ring-indigo-300"
+            required>
+        </div>
+
+        <!-- Color Picker -->
+        <div>
+          <label class="block text-sm font-medium mb-1">Tag Color</label>
+          <input type="color" id="tagColor" class="w-16 h-10 border rounded-md">
+        </div>
+
+        <button type="submit"
+          class="w-full bg-indigo-600 text-white font-semibold py-2 rounded-lg hover:bg-indigo-700 transition">
+          Save Habit
+        </button>
+      </form>
+    </div>
+
+    <!-- Habit List -->
+    <div class="bg-white rounded-xl shadow-md p-6 max-w-md mx-auto mt-6">
+      <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-list text-indigo-600"></i> Your Habits
+      </h2>
+      <ul id="habitList" class="space-y-2 text-sm"></ul>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white shadow-inner mt-6">
+    <div class="container mx-auto py-4 text-sm text-gray-500 px-4">
+      <div class="flex flex-col items-center sm:flex-row sm:justify-between">
+
+        <!-- Left side -->
+        <span class="mb-2 sm:mb-0">WalletFlow | Powered by Hackanova</span>
+
+        <!-- Right side -->
+        <div class="flex space-x-6">
+          <a href="helpage.html" class="hover:underline">Blog</a>
+          <a href="contact.html" class="hover:underline">Contact</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Script -->
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+    const SUPABASE_URL = "https://tpbfuyibluyflbajdehy.supabase.co";
+    const SUPABASE_ANON_KEY =
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwYmZ1eWlibHV5ZmxiYWpkZWh5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgyNzg5MzIsImV4cCI6MjA3Mzg1NDkzMn0.Y2KczDmRWCz9TuHIBWX8atYtA252p-30kv8iaXRd070";
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const habitForm = document.getElementById("habitForm");
+    const habitList = document.getElementById("habitList");
+
+    let currentUserId = null;
+
+    // small XSS-safe helper for output
+    function escapeHtml(str = "") {
+      return String(str).replace(/[&<>"']/g, (s) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      }[s]));
+    }
+
+    // --------------------------
+    // Ensure demo user exists & budget row
+    // --------------------------
+    async function initUser() {
+      try {
+        // use maybeSingle() so no-error when not found
+        const { data: existing, error: selErr } = await supabase
+          .from("users")
+          .select("*")
+          .eq("name", "Demo User")
+          .maybeSingle();
+
+        if (selErr) console.warn("users select warning:", selErr);
+
+        if (existing) {
+          currentUserId = existing.id;
+          // ensure budget row exists
+          const { data: b, error: berr } = await supabase
+            .from("budgets")
+            .select("id")
+            .eq("user_id", currentUserId)
+            .maybeSingle();
+          if (berr) console.warn("budgets select warning:", berr);
+          if (!b) {
+            await supabase.from("budgets").insert([{ user_id: currentUserId }]);
+          }
+        } else {
+          const { data, error } = await supabase
+            .from("users")
+            .insert([{ name: "Demo User" }])
+            .select()
+            .single();
+          if (error) {
+            console.error("Error creating demo user:", error);
+            alert("Could not create demo user — check console");
+            return;
+          }
+          currentUserId = data.id;
+          await supabase.from("budgets").insert([{ user_id: currentUserId }]);
+        }
+      } catch (err) {
+        console.error("initUser error:", err);
+        alert("Initialization error — see console.");
+      }
+    }
+
+    // --------------------------
+    // Load Habits (only selects columns present in your schema)
+    // --------------------------
+    async function loadHabits() {
+      if (!currentUserId) return;
+      try {
+        const { data, error } = await supabase
+          .from("habits")
+          .select("id, habit_name, penalty_amount, date, completed, created_at")
+          .eq("user_id", currentUserId)
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          console.error("loadHabits error:", error);
+          return;
+        }
+
+        habitList.innerHTML = "";
+
+        if (!data || data.length === 0) {
+          habitList.innerHTML = `<li class="text-gray-500">No habits yet.</li>`;
+          return;
+        }
+
+        data.forEach((habit) => {
+          const displayDate = habit.date || "";
+          const li = document.createElement("li");
+          li.className =
+            "flex justify-between items-center bg-gray-50 px-3 py-3 rounded-lg border";
+
+          li.innerHTML = `
+          <div>
+            <p class="font-semibold">${escapeHtml(habit.habit_name)}</p>
+            <p class="text-xs text-gray-500">Starts ${escapeHtml(displayDate)}</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-red-500 text-sm">₹${habit.penalty_amount ?? 0}</span>
+            <button data-id="${habit.id}" class="mark-missed text-xs bg-red-100 px-2 py-1 rounded hover:bg-red-200">Missed</button>
+            <button data-id="${habit.id}" class="mark-done text-xs bg-green-100 px-2 py-1 rounded hover:bg-green-200">Done</button>
+          </div>
+        `;
+          habitList.appendChild(li);
+        });
+
+        // Attach listeners
+        document.querySelectorAll(".mark-missed").forEach((btn) =>
+          btn.addEventListener("click", (e) =>
+            markHabit(e.currentTarget.dataset.id, false)
+          )
+        );
+        document.querySelectorAll(".mark-done").forEach((btn) =>
+          btn.addEventListener("click", (e) =>
+            markHabit(e.currentTarget.dataset.id, true)
+          )
+        );
+      } catch (err) {
+        console.error("Unexpected loadHabits error:", err);
+      }
+    }
+
+    // --------------------------
+    // Add Habit (only inserts columns your current SQL has)
+    // Assuming your habits table columns: user_id, habit_name, date, penalty_amount, completed, created_at
+    // --------------------------
+    habitForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!currentUserId) {
+        alert("User not initialized yet — try reloading the page.");
+        return;
+      }
+
+      const habitName = document.getElementById("habitName").value.trim();
+      const penalty = parseInt(document.getElementById("penaltyAmount").value) || 0;
+      // Use the Start Date input value as the `date` column value (your table expects 'date')
+      const dateVal = document.getElementById("startDate").value || new Date().toISOString().split("T")[0];
+
+      const habit = {
+        user_id: currentUserId,
+        habit_name: habitName,
+        penalty_amount: penalty,
+        date: dateVal,
+      };
+
+      try {
+        const { data, error } = await supabase.from("habits").insert([habit]).select().single();
+        if (error) {
+          console.error("Insert habit error:", error);
+          alert("Error adding habit: " + (error.message || JSON.stringify(error)));
+          return;
+        }
+        habitForm.reset();
+        loadHabits();
+      } catch (err) {
+        console.error("Unexpected insert error:", err);
+        alert("Unexpected error adding habit — see console.");
+      }
+    });
+
+    // --------------------------
+    // Mark Habit (Done / Missed) — updates habit.completed and adjusts budgets on missed
+    // --------------------------
+    async function markHabit(habitId, done) {
+      try {
+        // Update habit completed state
+        const { data: habitData, error: updateErr } = await supabase
+          .from("habits")
+          .update({ completed: done })
+          .eq("id", habitId)
+          .select()
+          .single();
+
+        if (updateErr) {
+          console.error("Update habit error:", updateErr);
+          alert("Error updating habit — see console.");
+          return;
+        }
+
+        // If missed (done === false), move penalty from fun_budget -> penalty_jar
+        if (habitData && done === false) {
+          const penalty = habitData.penalty_amount || 0;
+
+          // fetch budget row
+          const { data: budgetRow, error: bErr } = await supabase
+            .from("budgets")
+            .select("id, fun_budget, penalty_jar")
+            .eq("user_id", currentUserId)
+            .maybeSingle();
+
+          if (bErr) {
+            console.error("Budget select error:", bErr);
+          }
+
+          if (!budgetRow) {
+            // create a budget row if not exists (set penalty_jar = penalty)
+            const { error: createBErr } = await supabase
+              .from("budgets")
+              .insert([{ user_id: currentUserId, fun_budget: 0, penalty_jar: penalty }]);
+            if (createBErr) console.error("create budget error:", createBErr);
+          } else {
+            const newFun = (budgetRow.fun_budget || 0) - penalty;
+            const newPenaltyJar = (budgetRow.penalty_jar || 0) + penalty;
+            const { error: updBErr } = await supabase
+              .from("budgets")
+              .update({ fun_budget: newFun, penalty_jar: newPenaltyJar })
+              .eq("id", budgetRow.id);
+            if (updBErr) console.error("update budget error:", updBErr);
+          }
+        }
+
+        loadHabits();
+      } catch (err) {
+        console.error("markHabit unexpected error:", err);
+        alert("Unexpected error updating habit — see console.");
+      }
+    }
+
+    // --------------------------
+    // Start
+    // --------------------------
+    (async () => {
+      await initUser();
+      await loadHabits();
+    })();
+  </script>
+
+</body>
+
+</html>

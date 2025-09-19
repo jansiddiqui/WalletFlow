@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Contact Us</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+</head>
+
+<body class="bg-gray-100 flex flex-col min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <div class="container mx-auto flex justify-between items-center py-4 px-6">
+            <h1 class="text-xl font-bold flex items-center gap-2">
+                <img src="logo.jpg" alt="WalletFlow" class="w-12 h-12 rounded-full">
+                WalletFlow
+            </h1>
+            <nav class="hidden md:flex gap-6">
+                <a href="index.html" class="text-gray-600 hover:text-indigo-600">Home</a>
+                <a href="dashboard.html" class="text-gray-600 hover:text-indigo-600">Dashboard</a>
+                <a href="contact.html" class="text-indigo-600 font-semibold">Contact</a>
+            </nav>
+            <button id="menu-btn" class="md:hidden text-gray-600">
+                <i class="fa-solid fa-bars text-2xl"></i>
+            </button>
+        </div>
+        <!-- Mobile Menu Overlay -->
+        <div id="mobile-menu" class="hidden fixed inset-0 z-50 flex justify-end">
+            <!-- Dark background -->
+            <div id="overlay" class="absolute inset-0 bg-black bg-opacity-50"></div>
+
+            <!-- Drawer -->
+            <div id="drawer" class="relative w-64 bg-white h-full shadow-lg flex flex-col p-6 space-y-4 
+              transform translate-x-full transition-transform duration-300">
+                <button id="close-menu" class="self-end text-gray-600">
+                    <i class="fa-solid fa-xmark text-2xl"></i>
+                </button>
+                <a href="index.html" class="block text-gray-600 hover:text-indigo-600">Dashboard</a>
+                <a href="new_habit.html" class="block text-gray-600 hover:text-indigo-600">Habits</a>
+                <a href="report.html" class="block text-gray-600 hover:text-indigo-600">Reports</a>
+            </div>
+        </div>
+
+        <script>
+            const menuBtn = document.getElementById("menu-btn");
+            const mobileMenu = document.getElementById("mobile-menu");
+            const drawer = document.getElementById("drawer");
+            const overlay = document.getElementById("overlay");
+            const closeBtn = document.getElementById("close-menu");
+
+            // Open menu
+            menuBtn.addEventListener("click", () => {
+                mobileMenu.classList.remove("hidden");
+                setTimeout(() => {
+                    drawer.classList.remove("translate-x-full");
+                }, 10); // allow reflow before animating
+            });
+
+            // Close menu
+            function closeMenu() {
+                drawer.classList.add("translate-x-full");
+                setTimeout(() => {
+                    mobileMenu.classList.add("hidden");
+                }, 300); // match duration-300
+            }
+
+            closeBtn.addEventListener("click", closeMenu);
+            overlay.addEventListener("click", closeMenu);
+        </script>
+
+    </header>
+
+    <!-- Contact Section -->
+    <main class="container mx-auto flex-grow px-6 py-10">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+
+            <!-- Contact Form -->
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-paper-plane text-indigo-600"></i> Get in Touch
+                </h2>
+                <form action="https://formspree.io/f/xvgbeabn" method="POST" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Your Name</label>
+                        <input type="text" name="name" placeholder="Enter your name"
+                            class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            required />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Your Email</label>
+                        <input type="email" name="email" placeholder="Enter your email"
+                            class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            required />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Message</label>
+                        <textarea name="message" rows="4" placeholder="Type your message..."
+                            class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            required></textarea>
+                    </div>
+
+                    <button type="submit"
+                        class="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition">
+                        Send Message
+                    </button>
+                </form>
+
+            </div>
+
+            <!-- Contact Info -->
+            <div class="flex flex-col justify-center bg-white p-6 rounded-xl shadow-md space-y-6">
+                <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-address-book text-indigo-600"></i> Contact Information
+                </h2>
+                <p class="text-gray-600">Feel free to reach us anytime. We'll get back to you as soon as possible.</p>
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-phone text-indigo-600"></i>
+                    <span>+91 98765 43210</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-envelope text-indigo-600"></i>
+                    <span>support@example.com</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-location-dot text-indigo-600"></i>
+                    <span>New Delhi, India</span>
+                </div>
+                <div class="flex gap-4 text-indigo-600 text-xl">
+                    <a href="#"><i class="fa-brands fa-facebook"></i></a>
+                    <a href="#"><i class="fa-brands fa-twitter"></i></a>
+                    <a href="#"><i class="fa-brands fa-linkedin"></i></a>
+                    <a href="#"><i class="fa-brands fa-instagram"></i></a>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white shadow-inner mt-6">
+        <div class="container mx-auto py-4 text-sm text-gray-500 px-4">
+            <div class="flex flex-col items-center sm:flex-row sm:justify-between">
+
+                <!-- Left side -->
+                <span class="mb-2 sm:mb-0">WalletFlow | Powered by Hackanova</span>
+
+                <!-- Right side -->
+                <div class="flex space-x-6">
+                    <a href="helpage.html" class="hover:underline">Blog</a>
+                    <a href="contact.html" class="hover:underline">Contact</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+</body>
+
+</html>

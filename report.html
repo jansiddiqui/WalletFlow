@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Daily Check-In | WalletFlow</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+    <!-- React + ReactDOM must load before Recharts UMD -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.min.js"></script>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+</head>
+
+<body class="bg-gray-100 text-gray-800 flex flex-col min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <div class="container mx-auto flex justify-between items-center py-4 px-6">
+            <h1 class="text-xl font-bold flex items-center gap-2">
+                <img src="logo.jpg" alt="WalletFlow" class="w-12 h-12 rounded-full" />
+                WalletFlow
+            </h1>
+            <nav class="hidden md:flex gap-6">
+                <a href="index.html" class="text-gray-600 hover:text-indigo-600">Dashboard</a>
+                <a href="new_habit.html" class="text-gray-600 hover:text-indigo-600">Habits</a>
+                <a href="report.html" class="text-gray-600 hover:text-indigo-600">Reports</a>
+            </nav>
+            <!-- Header hamburger button -->
+            <button id="menu-btn" class="md:hidden text-gray-600">
+                <i class="fa-solid fa-bars text-2xl"></i>
+            </button>
+        </div>
+        <!-- Mobile Menu Overlay -->
+        <div id="mobile-menu" class="hidden fixed inset-0 z-50 flex justify-end">
+            <!-- Dark background -->
+            <div id="overlay" class="absolute inset-0 bg-black bg-opacity-50"></div>
+
+            <!-- Drawer -->
+            <div id="drawer" class="relative w-64 bg-white h-full shadow-lg flex flex-col p-6 space-y-4 
+              transform translate-x-full transition-transform duration-300">
+                <button id="close-menu" class="self-end text-gray-600">
+                    <i class="fa-solid fa-xmark text-2xl"></i>
+                </button>
+                <a href="index.html" class="block text-gray-600 hover:text-indigo-600">Dashboard</a>
+                <a href="new_habit.html" class="block text-gray-600 hover:text-indigo-600">Habits</a>
+                <a href="report.html" class="block text-gray-600 hover:text-indigo-600">Reports</a>
+            </div>
+        </div>
+
+        <script>
+            const menuBtn = document.getElementById("menu-btn");
+            const mobileMenu = document.getElementById("mobile-menu");
+            const drawer = document.getElementById("drawer");
+            const overlay = document.getElementById("overlay");
+            const closeBtn = document.getElementById("close-menu");
+
+            // Open menu
+            menuBtn.addEventListener("click", () => {
+                mobileMenu.classList.remove("hidden");
+                setTimeout(() => {
+                    drawer.classList.remove("translate-x-full");
+                }, 10); // allow reflow before animating
+            });
+
+            // Close menu
+            function closeMenu() {
+                drawer.classList.add("translate-x-full");
+                setTimeout(() => {
+                    mobileMenu.classList.add("hidden");
+                }, 300); // match duration-300
+            }
+
+            closeBtn.addEventListener("click", closeMenu);
+            overlay.addEventListener("click", closeMenu);
+        </script>
+
+    </header>
+
+    <main class="container mx-auto flex-grow px-4 py-6">
+        <h1 class="text-2xl mb-6 font-bold text-center">Habit Setup</h1>
+
+        <!-- Banner (no emoji) -->
+        <div
+            class="bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl shadow-md px-4 py-3 mb-6 text-center">
+            Keep your streak alive — beat your weekly record.
+        </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="bg-white shadow-md rounded-xl p-4 text-center">
+                <p class="text-gray-500 text-sm">This Week</p>
+                <p id="weekDone" class="text-2xl font-bold text-green-600">0</p>
+                <p class="text-xs text-gray-500">Habits Completed</p>
+            </div>
+            <div class="bg-white shadow-md rounded-xl p-4 text-center">
+                <p class="text-gray-500 text-sm">This Month</p>
+                <p id="monthDone" class="text-2xl font-bold text-green-600">0</p>
+                <p class="text-xs text-gray-500">Habits Completed</p>
+            </div>
+        </div>
+
+        <!-- Progress -->
+        <div class="bg-white rounded-xl shadow-md p-5 mb-6">
+            <p class="font-semibold text-sm mb-2">Today's Progress</p>
+            <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                <div id="progressBar" class="bg-green-500 h-3 rounded-full transition-all duration-500"
+                    style="width: 0%"></div>
+            </div>
+            <p id="progressText" class="text-xs text-gray-600 mt-1 text-right">0 of 0 completed</p>
+        </div>
+
+        <!-- Charts -->
+        <div id="charts" class="grid gap-6">
+            <div class="bg-white shadow-md rounded-xl p-6">
+                <h3 class="font-semibold mb-3">Weekly Progress</h3>
+                <div id="weeklyChart" style="min-height: 200px;"></div>
+            </div>
+
+            <div class="bg-white shadow-md rounded-xl p-6">
+                <h3 class="font-semibold mb-3">Monthly Progress</h3>
+                <div id="monthlyChart" style="min-height: 200px;"></div>
+            </div>
+        </div>
+
+        <!-- Today's Habits List -->
+        <div class="bg-white rounded-xl shadow-md p-6 mt-6">
+            <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-list text-indigo-600"></i> Today's Habits
+            </h2>
+            <ul id="habitsList" class="space-y-3"></ul>
+        </div>
+    </main>
+
+    <footer class="bg-white shadow-inner mt-6">
+        <div class="container mx-auto py-4 text-sm text-gray-500 px-4">
+            <div class="flex flex-col items-center sm:flex-row sm:justify-between">
+                <span class="mb-2 sm:mb-0">WalletFlow | Powered by Hackanova</span>
+                <div class="flex space-x-6">
+                    <a href="helpage.html" class="hover:underline">Blog</a>
+                    <a href="contact.html" class="hover:underline">Contact</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Script -->
+    <script type="module">
+        import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+        // ---------- Replace these with your own project keys ----------
+        const SUPABASE_URL = "https://tpbfuyibluyflbajdehy.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwYmZ1eWlibHV5ZmxiYWpkZWh5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgyNzg5MzIsImV4cCI6MjA3Mzg1NDkzMn0.Y2KczDmRWCz9TuHIBWX8atYtA252p-30kv8iaXRd070";
+        // If you intentionally pasted your anon key in the page already, keep it; otherwise replace above.
+        // ----------------------------------------------------------------
+
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // DOM references
+        const habitsList = document.getElementById("habitsList");
+        const progressBar = document.getElementById("progressBar");
+        const progressText = document.getElementById("progressText");
+        const weekDone = document.getElementById("weekDone");
+        const monthDone = document.getElementById("monthDone");
+
+        let habits = [];
+        let completedCount = 0;
+
+        // ------------------ Utility: safe console helper ------------------
+        function logQuery(name, result) {
+            console.groupCollapsed(`[Supabase] ${name}`);
+            console.log("data:", result.data);
+            if (result.error) console.error("error:", result.error);
+            console.groupEnd();
+        }
+
+        // ------------------ Load habits ------------------
+        async function loadHabits() {
+            try {
+                const { data, error } = await supabase.from("habits").select("*");
+                logQuery("habits.select(*)", { data, error });
+                if (error) {
+                    // show a helpful note in UI
+                    habitsList.innerHTML = `<li class="text-red-500">Error loading habits: ${error.message}</li>`;
+                    habits = [];
+                    return;
+                }
+                habits = data || [];
+                renderHabits();
+                computeInitialProgress();
+            } catch (err) {
+                console.error("Unexpected error in loadHabits:", err);
+                habitsList.innerHTML = `<li class="text-red-500">Unexpected error loading habits</li>`;
+            }
+        }
+
+        // ------------------ Render habit list ------------------
+        function renderHabits() {
+            if (!Array.isArray(habits) || habits.length === 0) {
+                habitsList.innerHTML = `<li class="text-gray-500">No habits found. Add one from the Habits page.</li>`;
+                return;
+            }
+            habitsList.innerHTML = "";
+            habits.forEach(habit => {
+                const li = document.createElement("li");
+                li.className = "flex justify-between items-center bg-gray-50 px-4 py-3 rounded-lg border";
+                const colorDot = habit.color || "#6366f1";
+                const category = habit.category || "General";
+                const penalty = typeof habit.penalty_amount !== "undefined" ? habit.penalty_amount : 0;
+                li.innerHTML = `
+          <div>
+            <p class="font-semibold flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full inline-block" style="background:${colorDot}"></span>
+              ${escapeHtml(habit.habit_name || "Unnamed")}
+            </p>
+            <p class="text-xs text-gray-500">${escapeHtml(category)} • Penalty ₹${penalty}</p>
+          </div>
+          <div class="flex gap-2">
+            <button data-id="${habit.id}" data-action="done" class="done-btn bg-green-500 hover:bg-green-600 text-white text-xs px-3 py-1 rounded-md">Done</button>
+            <button data-id="${habit.id}" data-action="skip" class="skip-btn bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1 rounded-md">Skip</button>
+          </div>
+        `;
+                habitsList.appendChild(li);
+            });
+            document.querySelectorAll(".done-btn, .skip-btn").forEach(btn => btn.addEventListener("click", handleAction));
+        }
+
+        // small helper to avoid XSS when inserting strings
+        function escapeHtml(str) {
+            if (!str) return "";
+            return String(str).replace(/[&<>"'`=\/]/g, s => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '/': '&#x2F;', '`': '&#x60;', '=': '&#x3D;'
+            })[s]);
+        }
+
+        // ------------------ Handle Done / Skip ------------------
+        async function handleAction(e) {
+            const id = e.target.dataset.id;
+            const action = e.target.dataset.action;
+            const habit = habits.find(h => h.id == id);
+            if (!habit) {
+                console.warn("Habit not found for id:", id);
+                return;
+            }
+
+            // disable UI immediately
+            e.target.closest("li").classList.add("opacity-50");
+            e.target.closest("li").querySelectorAll("button").forEach(b => b.disabled = true);
+
+            try {
+                completedCount++; // optimistic
+                updateProgress();
+
+                const today = new Date().toISOString().split("T")[0];
+                const { data: insertData, error: insertError } = await supabase.from("checkins")
+                    .insert([{ habit_id: id, status: action === "done" ? "done" : "skip", date: today }]);
+
+                logQuery("checkins.insert", { data: insertData, error: insertError });
+                if (insertError) console.error("checkins insert error:", insertError);
+
+                if (action === "skip") {
+                    const { data: pj, error: pjErr } = await supabase.from("penalty_jar")
+                        .insert([{ habit_id: id, amount: habit.penalty_amount || 0, date: today }]);
+                    logQuery("penalty_jar.insert", { data: pj, error: pjErr });
+                }
+            } catch (err) {
+                console.error("Unexpected error in handleAction:", err);
+            }
+        }
+
+        // ------------------ Progress calculation ------------------
+        function computeInitialProgress() {
+            // compute completedCount from today's checkins if any
+            completedCount = 0; // reset
+            // best effort: count checkins for today if present in DB (we fetch separately in loadStats)
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const total = Array.isArray(habits) ? habits.length : 0;
+            const percent = total ? Math.round((completedCount / total) * 100) : 0;
+            progressBar.style.width = percent + "%";
+            progressText.textContent = `${completedCount} of ${total} completed`;
+        }
+
+        // ------------------ Load stats (week/month) ------------------
+        async function loadStats() {
+            try {
+                const today = new Date();
+                const weekAgo = new Date(today); weekAgo.setDate(today.getDate() - 6); // last 7 days inclusive
+                const monthAgo = new Date(today); monthAgo.setDate(today.getDate() - 29); // last 30 days inclusive
+
+                const weekStr = weekAgo.toISOString().split("T")[0];
+                const monthStr = monthAgo.toISOString().split("T")[0];
+
+                const weekQuery = await supabase.from("checkins").select("status,date").gte("date", weekStr).order("date", { ascending: true });
+                logQuery("checkins.week", weekQuery);
+                if (weekQuery.error) {
+                    weekDone.textContent = "0";
+                }
+                const week = weekQuery.data || [];
+
+                const monthQuery = await supabase.from("checkins").select("status,date").gte("date", monthStr).order("date", { ascending: true });
+                logQuery("checkins.month", monthQuery);
+                const month = monthQuery.data || [];
+
+                const weekCount = (week || []).filter(c => c.status === "done").length || 0;
+                const monthCount = (month || []).filter(c => c.status === "done").length || 0;
+                weekDone.textContent = weekCount;
+                monthDone.textContent = monthCount;
+
+                drawWeeklyChart(week);
+                drawMonthlyChart(month);
+
+            } catch (err) {
+                console.error("Unexpected error in loadStats:", err);
+            }
+        }
+
+        // ------------------ Chart drawing with safe Recharts usage ------------------
+        function drawWeeklyChart(data) {
+            if (!Array.isArray(data)) data = [];
+            const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+            const counts = Array(7).fill(0);
+            data.forEach(c => {
+                const d = new Date(c.date);
+                counts[d.getDay()]++;
+            });
+            const chartData = days.map((d, i) => ({ day: d, done: counts[i] }));
+
+            // check Recharts + React + ReactDOM
+            if (!window.Recharts || !window.React || !window.ReactDOM) {
+                console.warn("Recharts/React not available - falling back to simple list for weekly chart.");
+                // fallback simple render
+                const node = document.getElementById("weeklyChart");
+                node.innerHTML = chartData.map(row => `<div class="flex justify-between py-1"><span>${row.day}</span><strong>${row.done}</strong></div>`).join("");
+                return;
+            }
+
+            const { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } = window.Recharts;
+            const element = window.React.createElement(
+                ResponsiveContainer,
+                { width: "100%", height: 200 },
+                window.React.createElement(BarChart, { data: chartData },
+                    window.React.createElement(XAxis, { dataKey: "day" }),
+                    window.React.createElement(YAxis, {}),
+                    window.React.createElement(Tooltip, {}),
+                    window.React.createElement(Bar, { dataKey: "done", fill: "#6366f1", radius: [6, 6, 0, 0] })
+                )
+            );
+
+            window.ReactDOM.render(element, document.getElementById("weeklyChart"));
+        }
+
+        function drawMonthlyChart(data) {
+            if (!Array.isArray(data)) data = [];
+            // aggregate by date
+            const map = {};
+            data.forEach(c => {
+                map[c.date] = (map[c.date] || 0) + 1;
+            });
+            const chartData = Object.keys(map).sort().map(d => ({ date: d, done: map[d] }));
+
+            if (!window.Recharts || !window.React || !window.ReactDOM) {
+                console.warn("Recharts/React not available - falling back to simple list for monthly chart.");
+                const node = document.getElementById("monthlyChart");
+                if (chartData.length === 0) {
+                    node.innerHTML = `<div class="text-gray-500">No monthly data</div>`;
+                } else {
+                    node.innerHTML = chartData.map(r => `<div class="flex justify-between py-1"><span>${r.date}</span><strong>${r.done}</strong></div>`).join("");
+                }
+                return;
+            }
+
+            const { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip } = window.Recharts;
+            const element = window.React.createElement(
+                ResponsiveContainer,
+                { width: "100%", height: 200 },
+                window.React.createElement(LineChart, { data: chartData },
+                    window.React.createElement(CartesianGrid, { strokeDasharray: "3 3" }),
+                    window.React.createElement(XAxis, { dataKey: "date" }),
+                    window.React.createElement(YAxis, {}),
+                    window.React.createElement(Tooltip, {}),
+                    window.React.createElement(Line, { type: "monotone", dataKey: "done", stroke: "#10b981", strokeWidth: 2, dot: true })
+                )
+            );
+
+            window.ReactDOM.render(element, document.getElementById("monthlyChart"));
+        }
+
+        // ------------------ Run loads ------------------
+        (async function init() {
+            // quick check for Recharts available
+            console.log("React available:", !!window.React, "ReactDOM available:", !!window.ReactDOM, "Recharts available:", !!window.Recharts);
+
+            await loadHabits();
+            await loadStats();
+        })();
+
+    </script>
+</body>
+
+</html>
