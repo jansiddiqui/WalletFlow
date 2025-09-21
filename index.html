@@ -343,6 +343,7 @@
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) return alert(error.message);
       loginModal.classList.add("hidden");
+      alert("Login successful!");
       setTimeout(loadDashboard, 500);
     });
 
@@ -353,7 +354,7 @@
       const password = document.getElementById("signupPassword").value;
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) return alert(error.message);
-      alert("Signup successful! Please login.");
+      alert("Signup successful! Check you confirmation email.");
       loginTab.click(); // Switch to login
     });
 
