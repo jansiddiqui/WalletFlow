@@ -81,9 +81,6 @@
     <!-- Habit Form -->
     <div class="bg-white rounded-xl shadow-md p-6 max-w-md mx-auto">
       <h1 class="text-2xl mb-6 font-bold text-center">Habit Setup</h1>
-      <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
-        <i class="fa-solid fa-plus-circle text-indigo-600"></i> Add a New Habit
-      </h2>
 
       <form id="habitForm" class="space-y-4">
 
@@ -202,47 +199,26 @@
     // Ensure demo user exists & budget row
     // --------------------------
     async function initUser() {
-      try {
-        // use maybeSingle() so no-error when not found
-        const { data: existing, error: selErr } = await supabase
-          .from("users")
-          .select("*")
-          .eq("name", "Demo User")
-          .maybeSingle();
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error || !user) {
+        alert("Please log in first.");
+        window.location.href = "login.html";
+        return;
+      }
+      currentUserId = user.id;
 
-        if (selErr) console.warn("users select warning:", selErr);
+      // Ensure a budget row exists for this user
+      const { data: budget, error: bErr } = await supabase
+        .from("budgets")
+        .select("id")
+        .eq("user_id", currentUserId)
+        .maybeSingle();
 
-        if (existing) {
-          currentUserId = existing.id;
-          // ensure budget row exists
-          const { data: b, error: berr } = await supabase
-            .from("budgets")
-            .select("id")
-            .eq("user_id", currentUserId)
-            .maybeSingle();
-          if (berr) console.warn("budgets select warning:", berr);
-          if (!b) {
-            await supabase.from("budgets").insert([{ user_id: currentUserId }]);
-          }
-        } else {
-          const { data, error } = await supabase
-            .from("users")
-            .insert([{ name: "Demo User" }])
-            .select()
-            .single();
-          if (error) {
-            console.error("Error creating demo user:", error);
-            alert("Could not create demo user — check console");
-            return;
-          }
-          currentUserId = data.id;
-          await supabase.from("budgets").insert([{ user_id: currentUserId }]);
-        }
-      } catch (err) {
-        console.error("initUser error:", err);
-        alert("Initialization error — see console.");
+      if (!budget) {
+        await supabase.from("budgets").insert([{ user_id: currentUserId, fun_budget: 0, penalty_jar: 0 }]);
       }
     }
+
 
     // --------------------------
     // Load Habits (only selects columns present in your schema)
@@ -346,59 +322,61 @@
     // Mark Habit (Done / Missed) — updates habit.completed and adjusts budgets on missed
     // --------------------------
     async function markHabit(habitId, done) {
-      try {
-        // Update habit completed state
-        const { data: habitData, error: updateErr } = await supabase
-          .from("habits")
-          .update({ completed: done })
-          .eq("id", habitId)
-          .select()
-          .single();
+  try {
+    // 1️⃣ Update habit completed state
+    const { data: habitData, error: updateErr } = await supabase
+      .from("habits")
+      .update({ completed: done })
+      .eq("id", habitId)
+      .select("id, penalty_amount, completed") // ensure penalty_amount is selected
+      .single();
 
-        if (updateErr) {
-          console.error("Update habit error:", updateErr);
-          alert("Error updating habit — see console.");
-          return;
-        }
+    if (updateErr) {
+      console.error("Update habit error:", updateErr);
+      alert("Error updating habit — see console.");
+      return;
+    }
 
-        // If missed (done === false), move penalty from fun_budget -> penalty_jar
-        if (habitData && done === false) {
-          const penalty = habitData.penalty_amount || 0;
+    // 2️⃣ If missed, update user's fun_budget and penalty_jar
+    if (habitData && done === false) {
+      const penalty = habitData.penalty_amount || 0;
 
-          // fetch budget row
-          const { data: budgetRow, error: bErr } = await supabase
-            .from("budgets")
-            .select("id, fun_budget, penalty_jar")
-            .eq("user_id", currentUserId)
-            .maybeSingle();
+      // Fetch current user data
+      const { data: userData, error: userErr } = await supabase
+        .from("users")
+        .select("id, fun_budget, penalty_jar")
+        .eq("id", currentUserId)
+        .single();
 
-          if (bErr) {
-            console.error("Budget select error:", bErr);
-          }
+      if (userErr) {
+        console.error("Fetching user data error:", userErr);
+        return;
+      }
 
-          if (!budgetRow) {
-            // create a budget row if not exists (set penalty_jar = penalty)
-            const { error: createBErr } = await supabase
-              .from("budgets")
-              .insert([{ user_id: currentUserId, fun_budget: 0, penalty_jar: penalty }]);
-            if (createBErr) console.error("create budget error:", createBErr);
-          } else {
-            const newFun = (budgetRow.fun_budget || 0) - penalty;
-            const newPenaltyJar = (budgetRow.penalty_jar || 0) + penalty;
-            const { error: updBErr } = await supabase
-              .from("budgets")
-              .update({ fun_budget: newFun, penalty_jar: newPenaltyJar })
-              .eq("id", budgetRow.id);
-            if (updBErr) console.error("update budget error:", updBErr);
-          }
-        }
+      // Calculate new values
+      const newFun = (userData.fun_budget || 0) - penalty;
+      const newPenaltyJar = (userData.penalty_jar || 0) + penalty;
 
-        loadHabits();
-      } catch (err) {
-        console.error("markHabit unexpected error:", err);
-        alert("Unexpected error updating habit — see console.");
+      // Update user row
+      const { error: updUserErr } = await supabase
+        .from("users")
+        .update({ fun_budget: newFun, penalty_jar: newPenaltyJar })
+        .eq("id", currentUserId);
+
+      if (updUserErr) {
+        console.error("Updating user data error:", updUserErr);
+        return;
       }
     }
+
+    // 3️⃣ Reload habits
+    loadHabits();
+  } catch (err) {
+    console.error("markHabit unexpected error:", err);
+    alert("Unexpected error updating habit — see console.");
+  }
+}
+
 
     // --------------------------
     // Start
