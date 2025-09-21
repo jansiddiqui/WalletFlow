@@ -147,6 +147,10 @@
             <i class="fa-solid fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
             <input id="loginPassword" type="password" placeholder="Password"
               class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <button type="button" id="toggleLoginPassword"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none">
+              <i class="fa-solid fa-eye"></i>
+            </button>
           </div>
           <button id="loginBtn"
             class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-lg transition-all duration-300">
@@ -165,6 +169,10 @@
             <i class="fa-solid fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
             <input id="signupPassword" type="password" placeholder="Password"
               class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" />
+            <button type="button" id="toggleSignupPassword"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none">
+              <i class="fa-solid fa-eye"></i>
+            </button>
           </div>
           <button id="signupBtn"
             class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-lg transition-all duration-300">
@@ -173,8 +181,6 @@
         </form>
       </div>
     </div>
-
-
 
     <!-- Centered Create New Habit Button -->
     <div class="flex justify-center mt-6">
@@ -362,6 +368,25 @@
       await supabase.auth.signOut();
       document.getElementById("loginModal").classList.remove("hidden");
     };
+
+    function setupPasswordToggle(toggleId, inputId) {
+      const toggleBtn = document.getElementById(toggleId);
+      const input = document.getElementById(inputId);
+
+      toggleBtn.addEventListener("click", () => {
+        const type = input.getAttribute("type") === "password" ? "text" : "password";
+        input.setAttribute("type", type);
+
+        toggleBtn.innerHTML =
+          type === "password"
+            ? '<i class="fa-solid fa-eye"></i>'
+            : '<i class="fa-solid fa-eye-slash"></i>';
+      });
+    }
+
+    // Apply for both login and signup
+    setupPasswordToggle("toggleLoginPassword", "loginPassword");
+    setupPasswordToggle("toggleSignupPassword", "signupPassword");
 
     document.getElementById("add-fun-money").onclick = async () => {
       const amount = parseInt(prompt("Enter amount to add:"));
